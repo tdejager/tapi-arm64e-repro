@@ -1,0 +1,70 @@
+schema_version: 1
+
+context:
+  version: 1600.0.11.8
+  commit: aed9334283e3e290bba622ee980bde2322e4d516
+
+package:
+  name: tapi
+  version: ${{ version }}
+
+source:
+  # latest commit from branch called `{{ version }}`
+  - url: https://github.com/tpoechtrager/apple-libtapi/archive/${{ commit }}.tar.gz
+    sha256: f244f7b3d8de3277204dece255b531f976bee80dad3247e9f36b30052b91c959
+    patches:
+      # fix issues in upstream CMake files
+      - patches/cmake-fix.patch
+      # backport of
+      # https://github.com/llvm/llvm-project/commit/d54dfdd1b53ff72344287d250c2b67329792c840
+      - patches/gcc-14-arm.patch
+      # add missing GetDarwinLinkerVersion.cmake; from
+      # https://github.com/llvm/llvm-project/commit/3bc71c2abfa00413fd15cf0e5c08af6ec0d4768b
+      - patches/cmake-darwin-linker.patch
+      # fall back to arm64e slice when arm64 is missing from .tbd files;
+      # macOS 26+ SDKs only ship arm64e slices (conda-forge/tapi-feedstock#16)
+      - patches/arm64e-fallback.patch
+
+build:
+  number: 1
+  skip: win
+  script:
+    env:
+      GIT_COMMIT: ${{ commit }}
+      # Build against 15.x SDK to avoid LLVM build issues on 26.x SDK.
+      # The resulting libtapi.dylib works fine with any SDK at runtime.
+      SDKROOT: /Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk
+      CONDA_BUILD_SYSROOT: /Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    # C-compiler only for bin/x86_64-conda-linux-gnu-cc symlink;
+    - ${{ compiler('c') }}
+    - if: build_platform != target_platform
+      then: ncurses
+    - cmake
+    - ninja
+  host:
+    - if: osx
+      then:
+        - libcxx
+        - ncurses
+  run:
+    - if: osx and cxx_compiler_version is defined
+      then: libcxx >=${{ cxx_compiler_version }}.0.0.a0
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/libtapi${SHLIB_EXT}
+      - test -f $PREFIX/include/tapi/tapi.h
+
+about:
+  license: NCSA
+  license_file:
+    - LICENSE.APPLE-LIBTAPI.txt
+    - LICENSE.LLVM.txt
+  summary: TAPI is a Text-based Application Programming Interface (patched for arm64e fallback)
+  homepage: https://opensource.apple.com/source/tapi
+  repository: https://github.com/ributzka/tapi

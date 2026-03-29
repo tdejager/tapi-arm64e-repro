@@ -2,20 +2,29 @@
 name = "tapi-arm64e-test"
 channels = ["conda-forge"]
 platforms = ["osx-arm64"]
+preview = ["pixi-build"]
 
-# Shared dependency: both envs get the conda-forge C toolchain
+[workspace.target.osx.build-variants]
+c_compiler = ["clang_bootstrap"]
+cxx_compiler = ["clang_bootstrap"]
+c_stdlib = ["macosx_deployment_target"]
+c_stdlib_version = ["11.0"]
+
 [dependencies]
 c-compiler = "*"
 
-# "broken" env: stock conda-forge tapi (demonstrates the bug)
+# "fixed" feature overrides tapi with our patched source build
+[feature.fixed.dependencies]
+tapi = { path = "./packages/tapi" }
+
 [environments]
 broken = ["broken"]
 fixed = ["fixed"]
 
 [feature.broken.tasks]
 verify-sdk = "bash scripts/verify-sdk.sh"
-test = { cmd = "bash scripts/test-broken.sh", depends-on = ["verify-sdk"] }
+test = { cmd = "bash scripts/test.sh", depends-on = ["verify-sdk"] }
 
 [feature.fixed.tasks]
-build-tapi = "bash scripts/build-tapi.sh"
-test = { cmd = "bash scripts/test-fixed.sh", depends-on = ["build-tapi"] }
+verify-sdk = "bash scripts/verify-sdk.sh"
+test = { cmd = "bash scripts/test.sh", depends-on = ["verify-sdk"] }

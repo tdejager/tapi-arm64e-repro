@@ -1,0 +1,24 @@
+diff --git a/src/tapi/tools/tapi-run/CMakeLists.txt b/src/tapi/tools/tapi-run/CMakeLists.txt
+index a655784ac..287659dc1 100644
+--- a/src/tapi/tools/tapi-run/CMakeLists.txt
++++ b/src/tapi/tools/tapi-run/CMakeLists.txt
+@@ -3,6 +3,7 @@ add_tapi_executable(tapi-run
+   )
+ 
+ target_link_libraries(tapi-run
++  PRIVATE
+   tapiCore
+   libtapi
+   )
+diff --git a/src/tapi/tools/tapi/CMakeLists.txt b/src/tapi/tools/tapi/CMakeLists.txt
+index 8440e83cd..8bb7271d9 100644
+--- a/src/tapi/tools/tapi/CMakeLists.txt
++++ b/src/tapi/tools/tapi/CMakeLists.txt
+@@ -14,6 +14,7 @@ add_tapi_executable(tapi
+   )
+ 
+ target_link_libraries(tapi
++  PRIVATE
+   tapiDriver
+   )
+ 
