@@ -1,6 +1,22 @@
 #!/bin/bash
 set -x
 
+# This LLVM version can't compile against macOS 26+ SDKs (missing getpagesize).
+# If we're on 26+, find an older SDK to build with. The resulting libtapi.dylib
+# works fine at runtime regardless of which SDK was used to compile it.
+SDK_DIR="/Library/Developer/CommandLineTools/SDKs"
+if [ -d "$SDK_DIR" ]; then
+  OLDER_SDK=$(ls -d "$SDK_DIR"/MacOSX1[0-9]*.sdk 2>/dev/null | sort -V | tail -1)
+  if [ -n "$OLDER_SDK" ]; then
+    echo "Using older SDK for build: $OLDER_SDK"
+    export SDKROOT="$OLDER_SDK"
+    export CONDA_BUILD_SYSROOT="$OLDER_SDK"
+    # Update CMAKE_ARGS to use the older sysroot
+    CMAKE_ARGS="${CMAKE_ARGS//-DCMAKE_OSX_SYSROOT=*-DCMAKE_OSX_SYSROOT=/-DCMAKE_OSX_SYSROOT=}"
+    CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_OSX_SYSROOT=${OLDER_SDK}"
+  fi
+fi
+
 mkdir build
 cd build
 

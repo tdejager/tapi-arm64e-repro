@@ -31,10 +31,6 @@ build:
   script:
     env:
       GIT_COMMIT: ${{ commit }}
-      # Build against 15.x SDK to avoid LLVM build issues on 26.x SDK.
-      # The resulting libtapi.dylib works fine with any SDK at runtime.
-      SDKROOT: /Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk
-      CONDA_BUILD_SYSROOT: /Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk
 
 requirements:
   build:
