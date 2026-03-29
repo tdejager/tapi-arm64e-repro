@@ -1,0 +1,21 @@
+[workspace]
+name = "tapi-arm64e-test"
+channels = ["conda-forge"]
+platforms = ["osx-arm64"]
+
+# Shared dependency: both envs get the conda-forge C toolchain
+[dependencies]
+c-compiler = "*"
+
+# "broken" env: stock conda-forge tapi (demonstrates the bug)
+[environments]
+broken = ["broken"]
+fixed = ["fixed"]
+
+[feature.broken.tasks]
+verify-sdk = "bash scripts/verify-sdk.sh"
+test = { cmd = "bash scripts/test-broken.sh", depends-on = ["verify-sdk"] }
+
+[feature.fixed.tasks]
+build-tapi = "bash scripts/build-tapi.sh"
+test = { cmd = "bash scripts/test-fixed.sh", depends-on = ["build-tapi"] }

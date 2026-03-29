@@ -1,0 +1,14 @@
+--- a/src/tapi/tools/libtapi/LinkerInterfaceFile.cpp
++++ b/src/tapi/tools/libtapi/LinkerInterfaceFile.cpp
+@@ -179,6 +179,11 @@ static Architecture getArchForCPU(cpu_type_t cpuType, cpu_subtype_t cpuSubType,
+
+   if (enforceCpuSubType)
+     return AK_unknown;
++
++  // macOS 26+ SDK .tbd files only carry arm64e slices.
++  // arm64e is a superset of arm64, so use it as fallback.
++  if (arch == AK_arm64 && archs.has(AK_arm64e))
++    return AK_arm64e;
++
+   return arch;
+ }
