@@ -476,9 +476,10 @@ packages:
 - conda: ./packages/tapi
   name: tapi
   version: 1600.0.11.8
-  build: h56303f1_1
+  build: h5d4aa15_1
   subdir: osx-arm64
   variants:
+    CONDA_BUILD_SYSROOT: /Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk
     build_platform: osx-arm64
     c_compiler: clang_bootstrap
     c_stdlib: macosx_deployment_target

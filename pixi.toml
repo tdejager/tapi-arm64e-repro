@@ -9,6 +9,10 @@ c_compiler = ["clang_bootstrap"]
 cxx_compiler = ["clang_bootstrap"]
 c_stdlib = ["macosx_deployment_target"]
 c_stdlib_version = ["11.0"]
+# Use an older SDK to build tapi because this LLVM version can't compile
+# against macOS 26+ SDKs. The resulting libtapi.dylib works at runtime
+# regardless of which SDK was used to compile it.
+CONDA_BUILD_SYSROOT = ["/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk"]
 
 [dependencies]
 c-compiler = "*"
