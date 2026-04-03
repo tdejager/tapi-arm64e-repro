@@ -1,0 +1,59 @@
+schema_version: 1
+
+context:
+  version: 1600.0.11.8
+
+package:
+  name: tapi
+  version: ${{ version }}
+
+source:
+  - git: https://github.com/tdejager/apple-libtapi
+    branch: fix-symbols-for-arm46
+    patches:
+      # fix issues in upstream CMake files
+      - patches/cmake-fix.patch
+      # backport of
+      # https://github.com/llvm/llvm-project/commit/d54dfdd1b53ff72344287d250c2b67329792c840
+      - patches/gcc-14-arm.patch
+      # add missing GetDarwinLinkerVersion.cmake; from
+      # https://github.com/llvm/llvm-project/commit/3bc71c2abfa00413fd15cf0e5c08af6ec0d4768b
+      - patches/cmake-darwin-linker.patch
+
+build:
+  number: 0
+  skip: win
+  script:
+    env:
+      GIT_COMMIT: fix-symbols-for-arm46
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - if: build_platform != target_platform
+      then: ncurses
+    - cmake
+    - ninja
+  host:
+    - if: osx
+      then:
+        - libcxx
+        - ncurses
+  run:
+    - if: osx and cxx_compiler_version is defined
+      then: libcxx >=${{ cxx_compiler_version }}.0.0.a0
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/libtapi${SHLIB_EXT}
+      - test -f $PREFIX/include/tapi/tapi.h
+
+about:
+  license: NCSA
+  license_file:
+    - LICENSE.APPLE-LIBTAPI.txt
+    - LICENSE.LLVM.txt
+  summary: TAPI is a Text-based Application Programming Interface
+  homepage: https://opensource.apple.com/source/tapi

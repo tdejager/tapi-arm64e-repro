@@ -1,0 +1,66 @@
+From 22d8b665213f35776a0b42781d2f8f20dfe5e40d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Micha=C5=82=20G=C3=B3rny?= <mgorny@quansight.com>
+Date: Fri, 7 Nov 2025 13:00:06 +0100
+Subject: [PATCH] Fix build with GCC 14 on ARM
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Backport of llvm/llvm-project@d54dfdd1b53ff72344287d250c2b67329792c840:
+
+GCC 14 defines `__arm_streaming` as a macro expanding to
+`[[arm::streaming]]`. Due to the nested macro use, this gets expanded
+prior to concatenation.
+
+It doesn't look like C++ has a really clean way to prevent macro
+expansion. The best I have found is to use `EMPTY ## X` where `EMPTY` is
+an empty macro argument, so this is the hack I'm implementing here.
+
+Fixes https://github.com/llvm/llvm-project/issues/78691.
+
+Signed-off-by: Michał Górny <mgorny@quansight.com>
+---
+ src/clang/include/clang/Basic/TokenKinds.def  | 2 +-
+ src/clang/include/clang/Basic/TokenKinds.h    | 2 +-
+ src/clang/utils/TableGen/ClangAttrEmitter.cpp | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/clang/include/clang/Basic/TokenKinds.def b/src/clang/include/clang/Basic/TokenKinds.def
+index 2d423f829..5b209a358 100644
+--- a/src/clang/include/clang/Basic/TokenKinds.def
++++ b/src/clang/include/clang/Basic/TokenKinds.def
+@@ -755,7 +755,7 @@ KEYWORD(__builtin_sycl_unique_stable_name, KEYSYCL)
+ 
+ // Keywords defined by Attr.td.
+ #ifndef KEYWORD_ATTRIBUTE
+-#define KEYWORD_ATTRIBUTE(X) KEYWORD(X, KEYALL)
++#define KEYWORD_ATTRIBUTE(X, EMPTY) KEYWORD(EMPTY ## X, KEYALL)
+ #endif
+ #include "clang/Basic/AttrTokenKinds.inc"
+ 
+diff --git a/src/clang/include/clang/Basic/TokenKinds.h b/src/clang/include/clang/Basic/TokenKinds.h
+index e4857405b..ff117bd5a 100644
+--- a/src/clang/include/clang/Basic/TokenKinds.h
++++ b/src/clang/include/clang/Basic/TokenKinds.h
+@@ -109,7 +109,7 @@ bool isPragmaAnnotation(TokenKind K);
+ 
+ inline constexpr bool isRegularKeywordAttribute(TokenKind K) {
+   return (false
+-#define KEYWORD_ATTRIBUTE(X) || (K == tok::kw_##X)
++#define KEYWORD_ATTRIBUTE(X, ...) || (K == tok::kw_##X)
+ #include "clang/Basic/AttrTokenKinds.inc"
+   );
+ }
+diff --git a/src/clang/utils/TableGen/ClangAttrEmitter.cpp b/src/clang/utils/TableGen/ClangAttrEmitter.cpp
+index ae5cb2915..b5102660f 100644
+--- a/src/clang/utils/TableGen/ClangAttrEmitter.cpp
++++ b/src/clang/utils/TableGen/ClangAttrEmitter.cpp
+@@ -3455,7 +3455,7 @@ void EmitClangAttrTokenKinds(RecordKeeper &Records, raw_ostream &OS) {
+                      "RegularKeyword attributes with arguments are not "
+                      "yet supported");
+         OS << "KEYWORD_ATTRIBUTE("
+-           << S.getSpellingRecord().getValueAsString("Name") << ")\n";
++           << S.getSpellingRecord().getValueAsString("Name") << ", )\n";
+       }
+   OS << "#undef KEYWORD_ATTRIBUTE\n";
+ }

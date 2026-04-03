@@ -1,0 +1,64 @@
+From 330b6ea2818fc1f5f9f1bba05a54bc317f3158f2 Mon Sep 17 00:00:00 2001
+From: Usama Hameed <u_hameed@apple.com>
+Date: Fri, 22 Mar 2024 15:29:36 -0700
+Subject: [PATCH] Add missing `GetDarwinLinkerVersion.cmake`
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+From llvm/llvm-project@3bc71c2abfa00413fd15cf0e5c08af6ec0d4768b:
+
+Get the linker version and pass the it to compiler-rt tests on Darwin. (#86220)
+
+The HOST_LINK_VERSION is a hardcoded string in Darwin clang that detects
+the linker version at configure time. The driver uses this information
+to build the correct set of arguments for the linker. This patch detects
+the linker version again during compiler-rt configuration and passes it
+to the tests. This allows a clang built on a machine with a new linker
+to run compiler-rt tests on a machine with an old linker.
+
+Signed-off-by: Michał Górny <mgorny@gentoo.org>
+---
+ src/clang/CMakeLists.txt                      |  2 +-
+ .../modules/GetDarwinLinkerVersion.cmake      | 19 +++++++++++++++++++
+ 2 files changed, 20 insertions(+), 1 deletion(-)
+ create mode 100644 src/llvm/cmake/modules/GetDarwinLinkerVersion.cmake
+
+diff --git a/src/clang/CMakeLists.txt b/src/clang/CMakeLists.txt
+index 0db756b79..afb4b7c1f 100644
+--- a/src/clang/CMakeLists.txt
++++ b/src/clang/CMakeLists.txt
+@@ -21,7 +21,7 @@ list(INSERT CMAKE_MODULE_PATH 0
+ 
+ # Must go below project(..)
+ #include(GNUInstallDirs)
+-#include(GetDarwinLinkerVersion)
++include(GetDarwinLinkerVersion)
+ 
+ if(CLANG_BUILT_STANDALONE)
+   set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
+diff --git a/src/llvm/cmake/modules/GetDarwinLinkerVersion.cmake b/src/llvm/cmake/modules/GetDarwinLinkerVersion.cmake
+new file mode 100644
+index 000000000..c27e50128
+--- /dev/null
++++ b/src/llvm/cmake/modules/GetDarwinLinkerVersion.cmake
+@@ -0,0 +1,19 @@
++# Get the linker version on Darwin
++function(get_darwin_linker_version variable)
++  set(LINK_VERSION)
++  set(LD_V_OUTPUT)
++  execute_process(
++    COMMAND sh -c "${CMAKE_LINKER} -v 2>&1 | head -1"
++    RESULT_VARIABLE HAD_ERROR
++    OUTPUT_VARIABLE LD_V_OUTPUT
++    )
++  if (HAD_ERROR)
++    message(FATAL_ERROR "${CMAKE_LINKER} failed with status ${HAD_ERROR}")
++  endif()
++  if ("${LD_V_OUTPUT}" MATCHES ".*ld64-([0-9.]+).*")
++    string(REGEX REPLACE ".*ld64-([0-9.]+).*" "\\1" LINK_VERSION ${LD_V_OUTPUT})
++  elseif ("${LD_V_OUTPUT}" MATCHES "[^0-9]*([0-9.]+).*")
++    string(REGEX REPLACE "[^0-9]*([0-9.]+).*" "\\1" LINK_VERSION ${LD_V_OUTPUT})
++  endif()
++  set(${variable} ${LINK_VERSION} PARENT_SCOPE)
++endfunction()

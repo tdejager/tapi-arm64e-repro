@@ -19,7 +19,7 @@ c-compiler = "*"
 
 # "fixed" feature overrides tapi with our patched source build
 [feature.fixed.dependencies]
-tapi = { git = "https://github.com/tdejager/tapi-feedstock", branch = "arm64e-fallback", subdirectory = "recipe" }
+tapi = { path = "recipe" }
 
 [environments]
 broken = ["broken"]
